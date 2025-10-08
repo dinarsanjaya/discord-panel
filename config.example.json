@@ -1,0 +1,24 @@
+{
+    "discord_tokens": [
+        "YOUR_DISCORD_BOT_TOKEN_1",
+        "YOUR_DISCORD_BOT_TOKEN_2"
+    ],
+    "google_api_keys": [
+        "YOUR_GOOGLE_API_KEY"
+    ],
+    "tasks": [
+        {
+            "id": "task_identifier",
+            "channel_id": "DISCORD_CHANNEL_ID",
+            "assigned_token_index": 0,
+            "mode": "gemini",
+            "use_google_ai": true,
+            "read_delay": 120,
+            "delay_interval": 120,
+            "prompt_language": "en",
+            "use_reply": true,
+            "delete_bot_reply": null,
+            "delete_immediately": false
+        }
+    ]
+}
