@@ -1,10 +1,106 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const eventSource = new EventSource("/logs");
-    eventSource.onmessage = (event) => {
-        const logOutput = document.getElementById('log-output');
-        logOutput.innerHTML += event.data + '\n';
-        logOutput.scrollTop = logOutput.scrollHeight;
-    };
+    // Live Log EventSource with auto-reconnect
+    let eventSource = null;
+    let reconnectAttempts = 0;
+    const maxReconnectDelay = 30000; // 30 seconds max delay
+    const logStatusBadge = document.getElementById('log-status');
+
+    function updateConnectionStatus(status) {
+        if (!logStatusBadge) return;
+
+        if (status === 'connected') {
+            logStatusBadge.className = 'badge bg-success ms-2';
+            logStatusBadge.textContent = '●';
+            logStatusBadge.title = 'Connected';
+        } else if (status === 'connecting') {
+            logStatusBadge.className = 'badge bg-warning ms-2';
+            logStatusBadge.textContent = '●';
+            logStatusBadge.title = 'Reconnecting...';
+        } else {
+            logStatusBadge.className = 'badge bg-danger ms-2';
+            logStatusBadge.textContent = '●';
+            logStatusBadge.title = 'Disconnected';
+        }
+    }
+
+    function connectEventSource() {
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        updateConnectionStatus('connecting');
+        eventSource = new EventSource("/logs");
+
+        eventSource.onopen = () => {
+            console.log('✅ Live log connected');
+            reconnectAttempts = 0; // Reset on successful connection
+            updateConnectionStatus('connected');
+
+            const logOutput = document.getElementById('log-output');
+            if (logOutput && logOutput.innerHTML.trim() === '') {
+                logOutput.innerHTML += '[Sistem] Live log terhubung...\n';
+            }
+        };
+
+        eventSource.onmessage = (event) => {
+            const logOutput = document.getElementById('log-output');
+            if (logOutput) {
+                logOutput.innerHTML += event.data + '\n';
+                logOutput.scrollTop = logOutput.scrollHeight;
+
+                // Limit log buffer to prevent memory issues (keep last 1000 lines)
+                const lines = logOutput.innerHTML.split('\n');
+                if (lines.length > 1000) {
+                    logOutput.innerHTML = lines.slice(-1000).join('\n');
+                }
+            }
+        };
+
+        eventSource.onerror = (error) => {
+            console.error('❌ Live log error:', error);
+            eventSource.close();
+            updateConnectionStatus('disconnected');
+
+            // Exponential backoff for reconnection
+            reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
+
+            console.log(`⏳ Reconnecting in ${delay/1000}s... (attempt ${reconnectAttempts})`);
+
+            const logOutput = document.getElementById('log-output');
+            if (logOutput) {
+                logOutput.innerHTML += `[Sistem] Koneksi terputus, mencoba reconnect dalam ${delay/1000}s...\n`;
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+
+            updateConnectionStatus('connecting');
+            setTimeout(connectEventSource, delay);
+        };
+    }
+
+    // Initial connection
+    connectEventSource();
+
+    // Clear log button handler
+    const clearLogBtn = document.getElementById('clear-log-btn');
+    if (clearLogBtn) {
+        clearLogBtn.addEventListener('click', () => {
+            const logOutput = document.getElementById('log-output');
+            if (logOutput) {
+                logOutput.innerHTML = '[Sistem] Log dibersihkan\n';
+            }
+        });
+    }
+
+    // Reconnect when offcanvas is shown (in case connection was lost while closed)
+    const offcanvasElement = document.getElementById('offcanvasLogs');
+    if (offcanvasElement) {
+        offcanvasElement.addEventListener('shown.bs.offcanvas', () => {
+            if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+                connectEventSource();
+            }
+        });
+    }
 
     let saveTimeout;
     let shouldReload = false;

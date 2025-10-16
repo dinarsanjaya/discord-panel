@@ -43,10 +43,20 @@ def get_bot_info_cached(token):
     return get_bot_info(token, None)
 
 def log_emitter():
-    while True:
-        message = log_queue.get()
-        yield f"data: {message}\n\n"
-        log_queue.task_done()
+    """Generator for Server-Sent Events with timeout handling"""
+    try:
+        while True:
+            try:
+                # Use timeout to prevent infinite blocking
+                message = log_queue.get(timeout=30)
+                yield f"data: {message}\n\n"
+                log_queue.task_done()
+            except:
+                # Send keepalive comment every 30 seconds to prevent connection timeout
+                yield f": keepalive\n\n"
+    except GeneratorExit:
+        # Client disconnected, cleanup gracefully
+        pass
 
 @app.route('/')
 def index():

@@ -238,13 +238,21 @@
         </div>
     </div>
     
-    <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasLogs" aria-labelledby="offcanvasLogsLabel">
+    <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasLogs" aria-labelledby="offcanvasLogsLabel" style="width: 500px;">
         <div class="offcanvas-header bg-dark border-bottom border-secondary">
-            <h5 class="offcanvas-title" id="offcanvasLogsLabel"><i class="bi bi-terminal me-2"></i> Live Log</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <h5 class="offcanvas-title" id="offcanvasLogsLabel">
+                <i class="bi bi-terminal me-2"></i> Live Log
+                <span id="log-status" class="badge bg-success ms-2" title="Connection status">●</span>
+            </h5>
+            <div class="d-flex gap-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-warning" id="clear-log-btn" title="Clear logs">
+                    <i class="bi bi-trash"></i>
+                </button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
         </div>
-        <div class="offcanvas-body">
-            <pre id="log-output" class="text-white"></pre>
+        <div class="offcanvas-body p-0">
+            <pre id="log-output" class="text-white m-0 p-3" style="height: 100%; overflow-y: auto; font-size: 0.85rem; line-height: 1.4;"></pre>
         </div>
     </div>
 
