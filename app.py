@@ -51,7 +51,7 @@ def log_emitter():
 @app.route('/')
 def index():
     config = load_config()
-    
+
     bot_accounts = []
     if config.get("discord_tokens"):
         # Use ThreadPoolExecutor for concurrent bot info retrieval
@@ -65,12 +65,17 @@ def index():
             try:
                 i = future_to_index[future]
                 username, discriminator, user_id = future.result(timeout=5)
-                bot_accounts.append({
-                    "index": i, "username": username,
-                    "discriminator": discriminator, "id": user_id
-                })
+
+                # Only add valid bot accounts (skip Invalid, Error, Timeout, Forbidden)
+                if user_id not in ("UnknownID",) or username not in ("Invalid", "Error", "Timeout", "Forbidden"):
+                    if user_id != "UnknownID":  # Valid token
+                        bot_accounts.append({
+                            "index": i, "username": username,
+                            "discriminator": discriminator, "id": user_id
+                        })
             except Exception as e:
-                print(f"Error getting bot info for token {i}: {e}")
+                # Silently skip failed tokens
+                pass
 
     for task in config.get("tasks", []):
         token_index = task.get("assigned_token_index", 0)
@@ -123,9 +128,16 @@ def start_bot():
         return jsonify({"status": "error", "message": "Token tidak valid."}), 400
 
     token = config['discord_tokens'][token_index]
+
+    # Validate token before starting
+    username, _, user_id = get_bot_info(token, log_queue)
+    if user_id == "UnknownID" or username in ("Invalid", "Error", "Timeout", "Forbidden"):
+        log_queue.put(f"❌ Token index {token_index} (ending ...{token[-4:]}) tidak valid atau expired.")
+        return jsonify({"status": "error", "message": f"Token tidak valid. Silakan periksa token index {token_index}."}), 400
+
     channel_id = task_to_run.get("channel_id")
     google_keys = config['google_api_keys']
-    
+
     stop_event = threading.Event()
     thread = threading.Thread(target=auto_reply, args=(
         channel_id, task_to_run, token, google_keys, log_queue, stop_event), daemon=True)
@@ -134,7 +146,6 @@ def start_bot():
     active_threads[task_id].stop_event = stop_event
     thread.start()
 
-    username, _, _ = get_bot_info(token, log_queue)
     log_queue.put(f"✅ [{channel_id}] Tugas '{task_id}' dimulai dengan akun: {username}.")
     return jsonify({"status": "success", "message": "Tugas berhasil dimulai."})
 

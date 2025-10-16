@@ -390,11 +390,32 @@ def get_channel_info(channel_id, token, queue):
 
 
 def get_bot_info(token, queue):
+    """Get bot account information from Discord API.
+
+    Returns tuple of (username, discriminator, user_id).
+    Returns ("Invalid", "0000", "UnknownID") if token is invalid.
+    """
+    if not token or not token.strip():
+        if queue:
+            log_message(queue, "Empty token provided", "WARNING")
+        return "Invalid", "0000", "UnknownID"
+
     headers = {"Authorization": token}
     try:
         res = session.get(
             "https://discord.com/api/v9/users/@me", headers=headers, timeout=10
         )
+
+        # Handle specific error codes
+        if res.status_code == 401:
+            if queue:
+                log_message(queue, f"⚠️ Token ending ...{token[-4:]} is invalid or expired", "WARNING")
+            return "Invalid", "0000", "UnknownID"
+        elif res.status_code == 403:
+            if queue:
+                log_message(queue, f"⚠️ Token ending ...{token[-4:]} lacks permissions", "WARNING")
+            return "Forbidden", "0000", "UnknownID"
+
         res.raise_for_status()
         data = res.json()
         return (
@@ -402,6 +423,11 @@ def get_bot_info(token, queue):
             data.get("discriminator", "0000"),
             data.get("id", "UnknownID"),
         )
-    except requests.exceptions.RequestException:
-        log_message(queue, f"Token...{token[-4:]} tidak valid.", "ERROR")
-        return "Unknown", "0000", "UnknownID"
+    except requests.exceptions.Timeout:
+        if queue:
+            log_message(queue, f"⏱️ Timeout checking token ...{token[-4:]}", "WARNING")
+        return "Timeout", "0000", "UnknownID"
+    except requests.exceptions.RequestException as e:
+        if queue:
+            log_message(queue, f"⚠️ Failed to verify token ...{token[-4:]}: {str(e)[:50]}", "WARNING")
+        return "Error", "0000", "UnknownID"
