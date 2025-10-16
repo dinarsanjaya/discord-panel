@@ -122,7 +122,8 @@ def generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queu
             from google import genai  # type: ignore
 
             client = genai.Client(api_key=google_api_key)
-            model_id = "gemini-2.5-flash"
+            # Use latest stable model
+            model_id = "gemini-2.0-flash-exp"
             try:
                 sdk_response = client.models.generate_content(
                     model=model_id,
@@ -133,58 +134,77 @@ def generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queu
                     if generated_text.lower() == last_generated_text:
                         return generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queue)
                     last_generated_text = generated_text.lower()
+                    log_message(queue, f"✅ AI reply generated using SDK ({model_id})", "SUCCESS")
                     return generated_text
             except Exception as sdk_e:
                 log_message(queue, f"SDK error ({model_id}): {sdk_e}. Fallback to REST.", "WARNING")
-        except Exception:
-            # SDK not installed or import failed; continue to REST
-            pass
+        except ImportError:
+            # SDK not installed; continue to REST
+            log_message(queue, "Google GenAI SDK not found, using REST API", "INFO")
+        except Exception as e:
+            log_message(queue, f"SDK initialization error: {e}. Using REST API.", "WARNING")
 
-        # REST fallback with multiple model candidates
+        # REST fallback with updated model candidates (only working models)
         model_candidates = [
-            "gemini-2.5-flash",
+            "gemini-2.0-flash-exp",
             "gemini-1.5-flash",
-            "gemini-1.5-flash-001",
-            "gemini-1.5-flash-002",
-            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro",
         ]
 
         headers = {
             "Content-Type": "application/json",
-            "x-goog-api-key": google_api_key,
         }
         data = {"contents": [{"role": "user", "parts": [{"text": ai_prompt}]}]}
 
         for model_id in model_candidates:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent"
+            # Use query parameter for API key instead of header (more compatible)
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={google_api_key}"
             try:
                 response = session.post(url, headers=headers, json=data, timeout=20)
 
                 if response.status_code == 404:
-                    log_message(queue, f"Model {model_id} tidak ditemukan (404). Mencoba model lain...", "WARNING")
+                    log_message(queue, f"⚠️ Model {model_id} not found (404), trying next model...", "WARNING")
                     continue
 
                 if response.status_code == 429:
-                    log_message(queue, f"API key {google_api_key[:5]}... kena rate limit (429). Tugas dihentikan sementara.", "WARNING")
+                    log_message(queue, f"⚠️ API key rate limit (429), marking key as used", "WARNING")
                     used_api_keys.add(google_api_key)
                     return None
 
+                if response.status_code == 400:
+                    error_detail = response.json().get("error", {}).get("message", "Unknown error")
+                    log_message(queue, f"⚠️ Bad request for {model_id}: {error_detail}", "WARNING")
+                    continue
+
                 response.raise_for_status()
                 result = response.json()
+
+                # Better error handling for response structure
+                if "candidates" not in result or not result["candidates"]:
+                    log_message(queue, f"⚠️ No candidates in response for {model_id}", "WARNING")
+                    continue
+
                 generated_text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
 
                 if generated_text.lower() == last_generated_text or not generated_text:
+                    log_message(queue, "Duplicate response detected, regenerating...", "INFO")
                     return generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queue)
 
                 last_generated_text = generated_text.lower()
+                log_message(queue, f"✅ AI reply generated using REST ({model_id})", "SUCCESS")
                 return generated_text
 
+            except requests.exceptions.HTTPError as e:
+                log_message(queue, f"HTTP error for {model_id}: {e.response.status_code}", "ERROR")
+                continue
             except requests.exceptions.RequestException as e:
-                log_message(queue, f"Request failed (model {model_id}): {e}", "ERROR")
-                if not (hasattr(e, "response") and getattr(e.response, "status_code", None) == 404):
-                    return None
+                log_message(queue, f"Request failed for {model_id}: {str(e)[:100]}", "ERROR")
+                continue
+            except (KeyError, IndexError) as e:
+                log_message(queue, f"Invalid response structure from {model_id}: {e}", "ERROR")
+                continue
 
-        log_message(queue, "Semua model Gemini tidak tersedia (404). Periksa model ID atau akses API.", "ERROR")
+        log_message(queue, "❌ All Gemini models failed. Check API key and model availability.", "ERROR")
         return None
 
     else:
@@ -255,6 +275,10 @@ def auto_reply(channel_id, settings, token, google_api_keys, queue, stop_event):
     if bot_user_id == "UnknownID":
         log_message(queue, f"[{channel_id}] Gagal memulai: Token tidak valid.", "ERROR")
         return
+
+    # Log bot start info
+    mode = settings.get("mode") or ("gemini" if settings.get("use_google_ai") else "pesan")
+    log_message(queue, f"[{channel_id}] Bot started as {username} in {mode} mode", "SUCCESS")
 
     while not stop_event.is_set():
         try:
