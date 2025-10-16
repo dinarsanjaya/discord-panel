@@ -30,39 +30,106 @@
         <div class="row mb-4">
             <div class="col-12 col-lg-6 mb-4 mb-lg-0">
                 <div class="card shadow-sm h-100">
-                    <div class="card-header bg-dark text-white d-flex align-items-center">
-                        <i class="bi bi-key-fill me-2 text-warning"></i><h5 class="mb-0 d-inline">Kunci API & Token</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="discord-tokens" class="form-label d-flex align-items-center"><i class="bi bi-discord me-2 text-info"></i> Discord Tokens</label>
-                            <textarea class="form-control" id="discord-tokens" rows="3" placeholder="token1, token2,...">{{ config.discord_tokens | join(',') }}</textarea>
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-discord me-2 text-info fs-5"></i>
+                            <h5 class="mb-0">Discord Tokens</h5>
                         </div>
-                        <div>
-                            <label for="google-api-keys" class="form-label d-flex align-items-center"><i class="bi bi-google me-2 text-danger"></i> Google API Keys</label>
-                            <textarea class="form-control" id="google-api-keys" rows="3" placeholder="key1, key2,...">{{ config.google_api_keys | join(',') }}</textarea>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addTokenModal">
+                            <i class="bi bi-plus-lg me-1"></i> Add Token
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div id="discord-tokens-list">
+                            {% if config.discord_tokens %}
+                                {% for token in config.discord_tokens %}
+                                <div class="token-item mb-2 p-3 border border-secondary rounded bg-dark" data-index="{{ loop.index0 }}">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">Token #{{ loop.index0 }}</span>
+                                                {% set bot = bot_accounts | selectattr('index', 'equalto', loop.index0) | first %}
+                                                {% if bot %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle me-1"></i>{{ bot.username }}#{{ bot.discriminator }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-x-circle me-1"></i>Invalid
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="input-group input-group-sm">
+                                                <input type="password" class="form-control token-input font-monospace" value="{{ token }}" readonly>
+                                                <button class="btn btn-outline-secondary toggle-token-visibility d-flex align-items-center justify-content-center" type="button" title="Show/Hide" style="width: 40px;">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-info copy-token-btn d-flex align-items-center justify-content-center" type="button" title="Copy" style="width: 40px;">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-outline-danger delete-token-btn d-flex align-items-center justify-content-center" type="button" title="Delete Token" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-inbox fs-1"></i>
+                                <p class="mt-2">No tokens added yet.<br>Click "Add Token" to get started.</p>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-6">
+
+            <div class="col-12 col-lg-6 mb-4 mb-lg-0">
                 <div class="card shadow-sm h-100">
-                    <div class="card-header bg-dark text-white d-flex align-items-center">
-                        <i class="bi bi-person-badge me-2 text-primary"></i><h5 class="mb-0 d-inline">Akun Bot Terdeteksi</h5>
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-google me-2 text-danger fs-5"></i>
+                            <h5 class="mb-0">Google API Keys</h5>
+                        </div>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addApiKeyModal">
+                            <i class="bi bi-plus-lg me-1"></i> Add Key
+                        </button>
                     </div>
-                    <div class="card-body">
-                        {% if bot_accounts %}
-                        <ul class="list-group list-group-flush">
-                            {% for account in bot_accounts %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-secondary">
-                                <div><strong>{{ account.username }}</strong><span class="text-muted">#{{ account.discriminator }}</span></div>
-                                <span class="badge bg-success rounded-pill">Token #{{ account.index }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <div class="text-center text-muted p-3"><i class="bi bi-x-circle fs-3"></i><p class="mt-2">Tidak ada token valid. <br>Masukkan token dan simpan.</p></div>
-                        {% endif %}
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div id="google-api-keys-list">
+                            {% if config.google_api_keys %}
+                                {% for key in config.google_api_keys %}
+                                <div class="api-key-item mb-2 p-3 border border-secondary rounded bg-dark" data-index="{{ loop.index0 }}">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="flex-grow-1">
+                                            <div class="mb-2">
+                                                <span class="badge bg-danger">API Key #{{ loop.index0 }}</span>
+                                            </div>
+                                            <div class="input-group input-group-sm">
+                                                <input type="password" class="form-control api-key-input font-monospace" value="{{ key }}" readonly>
+                                                <button class="btn btn-outline-secondary toggle-key-visibility d-flex align-items-center justify-content-center" type="button" title="Show/Hide" style="width: 40px;">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-info copy-key-btn d-flex align-items-center justify-content-center" type="button" title="Copy" style="width: 40px;">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-outline-danger delete-key-btn d-flex align-items-center justify-content-center" type="button" title="Delete Key" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-inbox fs-1"></i>
+                                <p class="mt-2">No API keys added yet.<br>Click "Add Key" to get started.</p>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -204,7 +271,77 @@
         </div>
     </footer>
 
+    <!-- Add Discord Token Modal -->
+    <div class="modal fade" id="addTokenModal" tabindex="-1" aria-labelledby="addTokenModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="addTokenModalLabel">
+                        <i class="bi bi-discord me-2 text-info"></i>Add Discord Token
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Open Discord in browser → Press F12 → Console → Paste the token extraction code from SETUP.md</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newTokenInput" class="form-label">Discord Token</label>
+                        <textarea class="form-control font-monospace" id="newTokenInput" rows="3" placeholder="Paste your Discord token here..."></textarea>
+                        <small class="form-text text-muted">Token format: MTk4NjIyNDgzNDcxOTI1MjQ4.Cl2FMQ.ZnCjm1XVW7vRze4b7Cq4se7kKWs</small>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="validateTokenCheck" checked>
+                        <label class="form-check-label" for="validateTokenCheck">
+                            Validate token before adding
+                        </label>
+                    </div>
+                    <div id="tokenValidationResult"></div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="saveTokenBtn">
+                        <i class="bi bi-plus-lg me-1"></i>Add Token
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Google API Key Modal -->
+    <div class="modal fade" id="addApiKeyModal" tabindex="-1" aria-labelledby="addApiKeyModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="addApiKeyModalLabel">
+                        <i class="bi bi-google me-2 text-danger"></i>Add Google API Key
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Get your API key from: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-white">Google AI Studio</a></small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newApiKeyInput" class="form-label">Google Gemini API Key</label>
+                        <textarea class="form-control font-monospace" id="newApiKeyInput" rows="2" placeholder="Paste your Google API key here..."></textarea>
+                        <small class="form-text text-muted">API key format: AIzaSyC...</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="saveApiKeyBtn">
+                        <i class="bi bi-plus-lg me-1"></i>Add API Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
 </body>
 </html>

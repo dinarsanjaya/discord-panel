@@ -92,3 +92,129 @@ body {
 .save-notification.show { opacity: 1; visibility: visible; bottom: 30px; }
 .save-notification.success { background-color: var(--bs-success); box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4); }
 .save-notification.error { background-color: var(--bs-danger); box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4); }
+
+/* Token & API Key Management Styles */
+.token-item, .api-key-item {
+    transition: all 0.2s ease;
+    background-color: #2a2a45 !important;
+}
+
+.token-item:hover, .api-key-item:hover {
+    background-color: #3a3a55 !important;
+    transform: translateX(5px);
+}
+
+.token-input, .api-key-input {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+/* Button alignment and sizing */
+.input-group .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    min-width: 40px;
+    height: 38px;
+    transition: all 0.3s ease;
+}
+
+.input-group .btn i {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Delete button alignment */
+.delete-token-btn, .delete-key-btn {
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 28px; /* Align with input group */
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+/* Copy button states */
+.btn-success {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+}
+
+.btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+}
+
+/* Modal Styles */
+.modal-content {
+    border: 1px solid var(--bs-border-color);
+}
+
+.modal-header {
+    border-bottom-color: var(--bs-border-color) !important;
+}
+
+.modal-footer {
+    border-top-color: var(--bs-border-color) !important;
+}
+
+/* Badge Styles */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a4a6e;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6a6a8e;
+}
+
+/* Empty state */
+.text-center.text-muted i {
+    opacity: 0.5;
+}
+
+/* Animation for copy feedback */
+@keyframes checkmark {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.btn i.bi-check2 {
+    animation: checkmark 0.3s ease;
+}

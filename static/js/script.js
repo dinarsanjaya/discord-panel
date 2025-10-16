@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
         logOutput.innerHTML += event.data + '\n';
         logOutput.scrollTop = logOutput.scrollHeight;
     };
-    
+
     let saveTimeout;
     let shouldReload = false;
 
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             const result = await response.json();
             showSaveNotification(result.status, result.message);
-            
+
             if (shouldReload) {
                 setTimeout(() => location.reload(), 1500);
             }
@@ -47,9 +47,279 @@ document.addEventListener('DOMContentLoaded', function() {
         saveTimeout = setTimeout(autoSaveChanges, 1500);
     };
 
+    // ============ TOKEN & API KEY MANAGEMENT ============
+
+    // Toggle token/key visibility
+    document.body.addEventListener('click', (e) => {
+        if (e.target.closest('.toggle-token-visibility')) {
+            const btn = e.target.closest('.toggle-token-visibility');
+            const input = btn.closest('.input-group').querySelector('.token-input');
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        if (e.target.closest('.toggle-key-visibility')) {
+            const btn = e.target.closest('.toggle-key-visibility');
+            const input = btn.closest('.input-group').querySelector('.api-key-input');
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+    });
+
+    // Copy token/key to clipboard with fallback
+    document.body.addEventListener('click', async (e) => {
+        if (e.target.closest('.copy-token-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.copy-token-btn');
+            const input = btn.closest('.input-group').querySelector('.token-input');
+
+            // Fallback copy function for older browsers or http://
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
+            };
+
+            try {
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(input.value);
+                } else {
+                    // Fallback for http:// or older browsers
+                    if (!fallbackCopy(input.value)) {
+                        throw new Error('Copy failed');
+                    }
+                }
+
+                // Success feedback
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2"></i>';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-info');
+                }, 1500);
+            } catch (err) {
+                console.error('Copy failed:', err);
+                // Error feedback
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-danger');
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-info');
+                }, 1500);
+            }
+        }
+
+        if (e.target.closest('.copy-key-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.copy-key-btn');
+            const input = btn.closest('.input-group').querySelector('.api-key-input');
+
+            // Fallback copy function
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
+            };
+
+            try {
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(input.value);
+                } else {
+                    // Fallback for http:// or older browsers
+                    if (!fallbackCopy(input.value)) {
+                        throw new Error('Copy failed');
+                    }
+                }
+
+                // Success feedback
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2"></i>';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-info');
+                }, 1500);
+            } catch (err) {
+                console.error('Copy failed:', err);
+                // Error feedback
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-danger');
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-info');
+                }, 1500);
+            }
+        }
+    });
+
+    // Delete token
+    document.body.addEventListener('click', (e) => {
+        if (e.target.closest('.delete-token-btn')) {
+            if (confirm('Are you sure you want to delete this token?')) {
+                const tokenItem = e.target.closest('.token-item');
+                tokenItem.remove();
+                triggerSave(true);
+            }
+        }
+
+        if (e.target.closest('.delete-key-btn')) {
+            if (confirm('Are you sure you want to delete this API key?')) {
+                const keyItem = e.target.closest('.api-key-item');
+                keyItem.remove();
+                triggerSave(true);
+            }
+        }
+    });
+
+    // Add new token modal
+    const saveTokenBtn = document.getElementById('saveTokenBtn');
+    const newTokenInput = document.getElementById('newTokenInput');
+    const tokenValidationResult = document.getElementById('tokenValidationResult');
+
+    if (saveTokenBtn) {
+        saveTokenBtn.addEventListener('click', async () => {
+            const token = newTokenInput.value.trim();
+            if (!token) {
+                alert('Please enter a token');
+                return;
+            }
+
+            // Basic token format validation
+            if (!token.includes('.') || token.length < 50) {
+                alert('Invalid token format. Discord tokens should be longer and contain dots (.)');
+                return;
+            }
+
+            // Add token to config
+            const config = collectConfigData();
+            config.discord_tokens.push(token);
+
+            try {
+                const response = await fetch('/save_config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showSaveNotification('success', 'Token added successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                    bootstrap.Modal.getInstance(document.getElementById('addTokenModal')).hide();
+                }
+            } catch (error) {
+                showSaveNotification('error', 'Failed to add token');
+            }
+        });
+    }
+
+    // Add new API key modal
+    const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+    const newApiKeyInput = document.getElementById('newApiKeyInput');
+
+    if (saveApiKeyBtn) {
+        saveApiKeyBtn.addEventListener('click', async () => {
+            const apiKey = newApiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('Please enter an API key');
+                return;
+            }
+
+            // Basic API key validation
+            if (!apiKey.startsWith('AIzaSy')) {
+                alert('Invalid API key format. Google API keys should start with "AIzaSy"');
+                return;
+            }
+
+            // Add API key to config
+            const config = collectConfigData();
+            config.google_api_keys.push(apiKey);
+
+            try {
+                const response = await fetch('/save_config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showSaveNotification('success', 'API key added successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                    bootstrap.Modal.getInstance(document.getElementById('addApiKeyModal')).hide();
+                }
+            } catch (error) {
+                showSaveNotification('error', 'Failed to add API key');
+            }
+        });
+    }
+
+    // Clear modal inputs when closed
+    document.getElementById('addTokenModal')?.addEventListener('hidden.bs.modal', () => {
+        newTokenInput.value = '';
+        tokenValidationResult.innerHTML = '';
+    });
+
+    document.getElementById('addApiKeyModal')?.addEventListener('hidden.bs.modal', () => {
+        newApiKeyInput.value = '';
+    });
+
+    // ============ TASK MANAGEMENT ============
+
     document.body.addEventListener('change', (event) => {
-        if (event.target.matches('input, select, textarea')) {
-            triggerSave(event.target.id === 'discord-tokens');
+        if (event.target.matches('.task-card input, .task-card select, .task-card textarea')) {
+            triggerSave();
         }
     });
 
@@ -184,11 +454,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function collectConfigData() {
+        // Collect tokens from token items
+        const tokens = [];
+        document.querySelectorAll('.token-item').forEach(item => {
+            const tokenInput = item.querySelector('.token-input');
+            if (tokenInput && tokenInput.value.trim()) {
+                tokens.push(tokenInput.value.trim());
+            }
+        });
+
+        // Collect API keys from key items
+        const apiKeys = [];
+        document.querySelectorAll('.api-key-item').forEach(item => {
+            const keyInput = item.querySelector('.api-key-input');
+            if (keyInput && keyInput.value.trim()) {
+                apiKeys.push(keyInput.value.trim());
+            }
+        });
+
         const config = {
-            discord_tokens: document.getElementById('discord-tokens').value.split(',').map(t => t.trim()).filter(Boolean),
-            google_api_keys: document.getElementById('google-api-keys').value.split(',').map(k => k.trim()).filter(Boolean),
+            discord_tokens: tokens,
+            google_api_keys: apiKeys,
             tasks: []
         };
+
         document.querySelectorAll('.task-card').forEach(card => {
             const deleteReplyVal = card.querySelector('.delete-bot-reply')?.value;
             config.tasks.push({
