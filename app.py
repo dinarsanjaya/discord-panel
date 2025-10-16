@@ -2,15 +2,20 @@ from flask import Flask, render_template, request, jsonify, Response
 import json
 import os
 import threading
-from queue import Queue
+from queue import Queue, Empty
 from dotenv import load_dotenv
 from bot_logic import auto_reply, get_channel_info, get_bot_info, get_message_cache_info, refresh_message_cache
 from concurrent.futures import ThreadPoolExecutor
 import functools
+import logging
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# Suppress BrokenPipeError logging for SSE connections
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 CONFIG_FILE = 'config.json'
 active_threads = {}
@@ -51,11 +56,11 @@ def log_emitter():
                 message = log_queue.get(timeout=30)
                 yield f"data: {message}\n\n"
                 log_queue.task_done()
-            except:
+            except Empty:
                 # Send keepalive comment every 30 seconds to prevent connection timeout
                 yield f": keepalive\n\n"
-    except GeneratorExit:
-        # Client disconnected, cleanup gracefully
+    except (GeneratorExit, BrokenPipeError, ConnectionResetError):
+        # Client disconnected, cleanup gracefully without logging error
         pass
 
 @app.route('/')
@@ -106,7 +111,11 @@ def index():
 
 @app.route('/logs')
 def logs():
-    return Response(log_emitter(), mimetype='text/event-stream')
+    """SSE endpoint for live logging with proper error handling"""
+    response = Response(log_emitter(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['X-Accel-Buffering'] = 'no'
+    return response
 
 @app.route('/refresh_pesan', methods=['POST'])
 def handle_refresh_pesan():
@@ -173,5 +182,9 @@ def stop_bot():
     return jsonify({"status": "error", "message": "Tugas tidak sedang berjalan."}), 404
 
 if __name__ == '__main__':
+    # Disable Flask reloader logging for cleaner output
+    import sys
+    if '--no-reload' not in sys.argv:
+        app.logger.setLevel(logging.WARNING)
 
     app.run(debug=True, host='0.0.0.0', port=5005)
