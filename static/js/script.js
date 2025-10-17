@@ -172,6 +172,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon.className = 'bi bi-eye';
             }
         }
+
+        if (e.target.closest('.toggle-openrouter-visibility')) {
+            const btn = e.target.closest('.toggle-openrouter-visibility');
+            const input = btn.closest('.input-group').querySelector('.openrouter-key-input');
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
     });
 
     // Copy token/key to clipboard with fallback
@@ -297,6 +310,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1500);
             }
         }
+
+        if (e.target.closest('.copy-openrouter-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.copy-openrouter-btn');
+            const input = btn.closest('.input-group').querySelector('.openrouter-key-input');
+
+            // Fallback copy function
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
+            };
+
+            try {
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(input.value);
+                } else {
+                    // Fallback for http:// or older browsers
+                    if (!fallbackCopy(input.value)) {
+                        throw new Error('Copy failed');
+                    }
+                }
+
+                // Success feedback
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2"></i>';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-info');
+                }, 1500);
+            } catch (err) {
+                console.error('Copy failed:', err);
+                // Error feedback
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+                btn.classList.remove('btn-outline-info');
+                btn.classList.add('btn-danger');
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-info');
+                }, 1500);
+            }
+        }
     });
 
     // Delete token
@@ -312,6 +386,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('.delete-key-btn')) {
             if (confirm('Are you sure you want to delete this API key?')) {
                 const keyItem = e.target.closest('.api-key-item');
+                keyItem.remove();
+                triggerSave(true);
+            }
+        }
+
+        if (e.target.closest('.delete-openrouter-btn')) {
+            if (confirm('Are you sure you want to delete this OpenRouter key?')) {
+                const keyItem = e.target.closest('.openrouter-key-item');
                 keyItem.remove();
                 triggerSave(true);
             }
@@ -401,6 +483,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Add new OpenRouter API key modal
+    const saveOpenRouterKeyBtn = document.getElementById('saveOpenRouterKeyBtn');
+    const newOpenRouterKeyInput = document.getElementById('newOpenRouterKeyInput');
+
+    if (saveOpenRouterKeyBtn) {
+        saveOpenRouterKeyBtn.addEventListener('click', async () => {
+            const apiKey = newOpenRouterKeyInput.value.trim();
+            if (!apiKey) {
+                alert('Please enter an OpenRouter API key');
+                return;
+            }
+
+            // Basic API key validation
+            if (!apiKey.startsWith('sk-or-')) {
+                alert('Invalid API key format. OpenRouter API keys should start with "sk-or-"');
+                return;
+            }
+
+            // Add API key to config
+            const config = collectConfigData();
+            config.openrouter_api_keys.push(apiKey);
+
+            try {
+                const response = await fetch('/save_config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showSaveNotification('success', 'OpenRouter API key added successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                    bootstrap.Modal.getInstance(document.getElementById('addOpenRouterKeyModal')).hide();
+                }
+            } catch (error) {
+                showSaveNotification('error', 'Failed to add OpenRouter API key');
+            }
+        });
+    }
+
     // Clear modal inputs when closed
     document.getElementById('addTokenModal')?.addEventListener('hidden.bs.modal', () => {
         newTokenInput.value = '';
@@ -409,6 +532,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('addApiKeyModal')?.addEventListener('hidden.bs.modal', () => {
         newApiKeyInput.value = '';
+    });
+
+    document.getElementById('addOpenRouterKeyModal')?.addEventListener('hidden.bs.modal', () => {
+        newOpenRouterKeyInput.value = '';
     });
 
     // ============ TASK MANAGEMENT ============
@@ -438,13 +565,25 @@ document.addEventListener('DOMContentLoaded', function() {
     taskList.addEventListener('change', e => {
         if (e.target.classList.contains('mode-select')) {
             const card = e.target.closest('.task-card');
-            const isGemini = e.target.value === 'gemini';
-            card.querySelector('.ai-settings').style.display = isGemini ? 'block' : 'none';
+            const mode = e.target.value;
+            const isAiMode = mode === 'gemini' || mode === 'openrouter';
+
+            // Show/hide AI settings (read delay)
+            const aiSettings = card.querySelector('.ai-settings');
+            if (aiSettings) {
+                aiSettings.style.display = isAiMode ? 'block' : 'none';
+            }
+
+            // Show/hide OpenRouter specific settings
+            const openrouterSettings = card.querySelector('.openrouter-settings');
+            if (openrouterSettings) {
+                openrouterSettings.style.display = mode === 'openrouter' ? 'block' : 'none';
+            }
 
             // toggle pesan.txt badge section
             const headerRight = card.querySelector('.card-header .d-flex.align-items-center');
             let badge = headerRight.querySelector('.badge.bg-info');
-            if (!isGemini) {
+            if (mode === 'pesan') {
                 if (!badge) {
                     const span = document.createElement('span');
                     span.className = 'badge bg-info';
@@ -568,21 +707,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Collect OpenRouter API keys
+        const openrouterKeys = [];
+        document.querySelectorAll('.openrouter-key-item').forEach(item => {
+            const keyInput = item.querySelector('.openrouter-key-input');
+            if (keyInput && keyInput.value.trim()) {
+                openrouterKeys.push(keyInput.value.trim());
+            }
+        });
+
         const config = {
             discord_tokens: tokens,
             google_api_keys: apiKeys,
+            openrouter_api_keys: openrouterKeys,
             tasks: []
         };
 
         document.querySelectorAll('.task-card').forEach(card => {
             const deleteReplyVal = card.querySelector('.delete-bot-reply')?.value;
+            const mode = card.querySelector('.mode-select')?.value || 'gemini';
             config.tasks.push({
                 id: card.dataset.taskId,
                 channel_id: card.querySelector('.channel-id-input').value,
                 assigned_token_index: parseInt(card.querySelector('.assigned-token').value) || 0,
                 // new mode field; keep use_google_ai for backward compatibility on the server side
-                mode: card.querySelector('.mode-select')?.value || 'gemini',
-                use_google_ai: (card.querySelector('.mode-select')?.value || 'gemini') === 'gemini',
+                mode: mode,
+                use_google_ai: mode === 'gemini',
+                openrouter_model: card.querySelector('.openrouter-model')?.value || 'openai/gpt-3.5-turbo',
                 read_delay: parseInt(card.querySelector('.read-delay')?.value) || 10,
                 delay_interval: parseInt(card.querySelector('.delay-interval').value) || 30,
                 prompt_language: card.querySelector('.prompt-language')?.value || 'id',

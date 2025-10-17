@@ -35,6 +35,7 @@ def create_default_config():
     return {
         "discord_tokens": [token.strip() for token in os.getenv('DISCORD_TOKENS', '').split(',') if token.strip()],
         "google_api_keys": [key.strip() for key in os.getenv('GOOGLE_API_KEYS', '').split(',') if key.strip()],
+        "openrouter_api_keys": [key.strip() for key in os.getenv('OPENROUTER_API_KEYS', '').split(',') if key.strip()],
         "tasks": []
     }
 
@@ -156,10 +157,11 @@ def start_bot():
 
     channel_id = task_to_run.get("channel_id")
     google_keys = config['google_api_keys']
+    openrouter_keys = config.get('openrouter_api_keys', [])
 
     stop_event = threading.Event()
     thread = threading.Thread(target=auto_reply, args=(
-        channel_id, task_to_run, token, google_keys, log_queue, stop_event), daemon=True)
+        channel_id, task_to_run, token, google_keys, log_queue, stop_event, openrouter_keys), daemon=True)
 
     active_threads[task_id] = thread
     active_threads[task_id].stop_event = stop_event

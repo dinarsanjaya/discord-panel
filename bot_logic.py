@@ -103,6 +103,69 @@ def get_random_api_key(google_api_keys, queue):
     return random.choice(available_keys)
 
 
+def generate_reply_openrouter(prompt, prompt_language, openrouter_api_key, model_id, queue):
+    """Generate reply using OpenRouter API"""
+    global last_generated_text
+
+    if not openrouter_api_key:
+        log_message(queue, "Tidak ada OpenRouter API Key.", "ERROR")
+        return None
+
+    if prompt_language == "id":
+        ai_prompt = f"Balas pesan berikut dalam Bahasa Indonesia: '{prompt}'. Buat balasan menjadi satu kalimat santai dan kasual tanpa simbol seperti yang diucapkan manusia sehari-hari."
+    else:
+        ai_prompt = f"Reply to the following message in English: '{prompt}'. Make the reply a single, casual sentence like a human would say."
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {openrouter_api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/shareithub",
+    }
+
+    data = {
+        "model": model_id,
+        "messages": [
+            {"role": "user", "content": ai_prompt}
+        ]
+    }
+
+    try:
+        response = session.post(url, headers=headers, json=data, timeout=30)
+
+        if response.status_code == 429:
+            log_message(queue, f"⚠️ OpenRouter rate limit (429)", "WARNING")
+            return None
+
+        if response.status_code == 401:
+            log_message(queue, f"⚠️ OpenRouter API key tidak valid", "ERROR")
+            return None
+
+        response.raise_for_status()
+        result = response.json()
+
+        if "choices" not in result or not result["choices"]:
+            log_message(queue, f"⚠️ No response from OpenRouter", "WARNING")
+            return None
+
+        generated_text = result["choices"][0]["message"]["content"].strip()
+
+        if generated_text.lower() == last_generated_text or not generated_text:
+            log_message(queue, "Duplicate response detected, regenerating...", "INFO")
+            return generate_reply_openrouter(prompt, prompt_language, openrouter_api_key, model_id, queue)
+
+        last_generated_text = generated_text.lower()
+        log_message(queue, f"✅ AI reply generated using OpenRouter ({model_id})", "SUCCESS")
+        return generated_text
+
+    except requests.exceptions.RequestException as e:
+        log_message(queue, f"OpenRouter request failed: {str(e)[:100]}", "ERROR")
+        return None
+    except (KeyError, IndexError) as e:
+        log_message(queue, f"Invalid OpenRouter response: {e}", "ERROR")
+        return None
+
+
 def generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queue):
     global last_generated_text
     if use_google_ai:
@@ -268,7 +331,7 @@ def delete_message(channel_id, message_id, token, queue):
         log_message(queue, f"[{channel_id}] Error hapus pesan: {e}", "ERROR")
 
 
-def auto_reply(channel_id, settings, token, google_api_keys, queue, stop_event):
+def auto_reply(channel_id, settings, token, google_api_keys, queue, stop_event, openrouter_api_keys=None):
     headers = {"Authorization": token}
 
     username, _, bot_user_id = get_bot_info(token, queue)
@@ -284,7 +347,7 @@ def auto_reply(channel_id, settings, token, google_api_keys, queue, stop_event):
         try:
             # Determine mode with backward compatibility
             mode = settings.get("mode") or ("gemini" if settings.get("use_google_ai") else "pesan")
-            if mode == "gemini":
+            if mode == "gemini" or mode == "openrouter":
                 if stop_event.wait(timeout=settings.get("read_delay", 10)):
                     break
 
@@ -314,13 +377,31 @@ def auto_reply(channel_id, settings, token, google_api_keys, queue, stop_event):
                                 f"[{channel_id}] Pesan diterima: {user_message}",
                                 "INFO",
                             )
-                            reply_text = generate_reply(
-                                user_message,
-                                settings.get("prompt_language"),
-                                True,
-                                google_api_keys,
-                                queue,
-                            )
+
+                            # Generate reply based on mode
+                            if mode == "openrouter":
+                                if not openrouter_api_keys or not any(openrouter_api_keys):
+                                    log_message(queue, "Tidak ada OpenRouter API Key.", "ERROR")
+                                    reply_text = None
+                                else:
+                                    openrouter_key = random.choice([k for k in openrouter_api_keys if k])
+                                    model_id = settings.get("openrouter_model", "openai/gpt-3.5-turbo")
+                                    reply_text = generate_reply_openrouter(
+                                        user_message,
+                                        settings.get("prompt_language"),
+                                        openrouter_key,
+                                        model_id,
+                                        queue,
+                                    )
+                            else:  # gemini mode
+                                reply_text = generate_reply(
+                                    user_message,
+                                    settings.get("prompt_language"),
+                                    True,
+                                    google_api_keys,
+                                    queue,
+                                )
+
                             if reply_text:
                                 send_message(
                                     channel_id,
