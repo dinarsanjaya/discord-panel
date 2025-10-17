@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, jsonify, Response
 import json
 import os
 import threading
+import signal
+import sys
+import atexit
 from queue import Queue, Empty
 from dotenv import load_dotenv
 from bot_logic import auto_reply, get_channel_info, get_bot_info, get_message_cache_info, refresh_message_cache
@@ -21,6 +24,38 @@ CONFIG_FILE = 'config.json'
 active_threads = {}
 log_queue = Queue()
 executor = ThreadPoolExecutor(max_workers=5)  # Limit concurrent operations
+
+# Shutdown flag
+shutdown_flag = False
+
+def cleanup():
+    """Cleanup function to stop all threads and executor"""
+    global shutdown_flag
+    shutdown_flag = True
+
+    print("\n🛑 Shutting down application...")
+
+    # Stop all active bot threads
+    for task_id, thread in list(active_threads.items()):
+        if hasattr(thread, 'stop_event'):
+            thread.stop_event.set()
+
+    # Shutdown executor
+    executor.shutdown(wait=False)
+
+    print("✅ Cleanup completed")
+
+def signal_handler(sig, frame):
+    """Handle Ctrl+C and terminal close signals"""
+    cleanup()
+    sys.exit(0)
+
+# Register signal handlers
+signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
+signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
+
+# Register cleanup on exit
+atexit.register(cleanup)
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
@@ -184,9 +219,17 @@ def stop_bot():
     return jsonify({"status": "error", "message": "Tugas tidak sedang berjalan."}), 404
 
 if __name__ == '__main__':
-    # Disable Flask reloader logging for cleaner output
-    import sys
-    if '--no-reload' not in sys.argv:
-        app.logger.setLevel(logging.WARNING)
+    print("🚀 Starting Discord Bot Dashboard on http://localhost:5005")
+    print("⚠️  Press Ctrl+C to stop the server")
 
-    app.run(debug=True, host='0.0.0.0', port=5005)
+    try:
+        # Run Flask without reloader to prevent duplicate processes
+        # use_reloader=False ensures app closes when terminal is closed
+        app.run(debug=False, host='0.0.0.0', port=5005, use_reloader=False, threaded=True)
+    except KeyboardInterrupt:
+        print("\n👋 Shutting down gracefully...")
+        cleanup()
+    finally:
+        # Ensure cleanup runs
+        if not shutdown_flag:
+            cleanup()
