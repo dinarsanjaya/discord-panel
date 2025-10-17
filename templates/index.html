@@ -141,33 +141,33 @@
                     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-box-arrow-up-right me-2 text-warning fs-5"></i>
-                            <h5 class="mb-0">OpenRouter API Keys</h5>
+                            <h5 class="mb-0">AgentRouter API Keys</h5>
                         </div>
-                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addOpenRouterKeyModal">
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addAgentRouterKeyModal">
                             <i class="bi bi-plus-lg me-1"></i> Add Key
                         </button>
                     </div>
                     <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        <div id="openrouter-api-keys-list">
-                            {% if config.openrouter_api_keys %}
-                                {% for key in config.openrouter_api_keys %}
-                                <div class="openrouter-key-item mb-2 p-3 border border-secondary rounded bg-dark" data-index="{{ loop.index0 }}">
+                        <div id="agentrouter-api-keys-list">
+                            {% if config.agentrouter_api_keys %}
+                                {% for key in config.agentrouter_api_keys %}
+                                <div class="agentrouter-key-item mb-2 p-3 border border-secondary rounded bg-dark" data-index="{{ loop.index0 }}">
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="flex-grow-1">
                                             <div class="mb-2">
-                                                <span class="badge bg-warning">OpenRouter Key #{{ loop.index0 }}</span>
+                                                <span class="badge bg-warning">AgentRouter Key #{{ loop.index0 }}</span>
                                             </div>
                                             <div class="input-group input-group-sm">
-                                                <input type="password" class="form-control openrouter-key-input font-monospace" value="{{ key }}" readonly>
-                                                <button class="btn btn-outline-secondary toggle-openrouter-visibility d-flex align-items-center justify-content-center" type="button" title="Show/Hide" style="width: 40px;">
+                                                <input type="password" class="form-control agentrouter-key-input font-monospace" value="{{ key }}" readonly>
+                                                <button class="btn btn-outline-secondary toggle-agentrouter-visibility d-flex align-items-center justify-content-center" type="button" title="Show/Hide" style="width: 40px;">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
-                                                <button class="btn btn-outline-info copy-openrouter-btn d-flex align-items-center justify-content-center" type="button" title="Copy" style="width: 40px;">
+                                                <button class="btn btn-outline-info copy-agentrouter-btn d-flex align-items-center justify-content-center" type="button" title="Copy" style="width: 40px;">
                                                     <i class="bi bi-clipboard"></i>
                                                 </button>
                                             </div>
                                         </div>
-                                        <button class="btn btn-outline-danger delete-openrouter-btn d-flex align-items-center justify-content-center" type="button" title="Delete Key" style="width: 40px; height: 40px;">
+                                        <button class="btn btn-outline-danger delete-agentrouter-btn d-flex align-items-center justify-content-center" type="button" title="Delete Key" style="width: 40px; height: 40px;">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -176,7 +176,7 @@
                             {% else %}
                             <div class="text-center text-muted p-4">
                                 <i class="bi bi-inbox fs-1"></i>
-                                <p class="mt-2">No OpenRouter keys added yet.<br>Click "Add Key" to get started.</p>
+                                <p class="mt-2">No AgentRouter keys added yet.<br>Click "Add Key" to get started.</p>
                             </div>
                             {% endif %}
                         </div>
@@ -232,24 +232,21 @@
                             <select class="form-select form-select-sm mode-select">
                                 {% set current_mode = task.mode if task.mode is defined else ('gemini' if task.use_google_ai else 'pesan') %}
                                 <option value="gemini" {% if current_mode == 'gemini' %}selected{% endif %}>Gemini</option>
-                                <option value="openrouter" {% if current_mode == 'openrouter' %}selected{% endif %}>OpenRouter</option>
+                                <option value="agentrouter" {% if current_mode == 'agentrouter' %}selected{% endif %}>AgentRouter (GPT-5)</option>
                                 <option value="pesan" {% if current_mode == 'pesan' %}selected{% endif %}>pesan.txt</option>
                             </select>
                         </div>
-                        <div class="ai-settings mt-3 {% if current_mode != 'gemini' and current_mode != 'openrouter' %}d-none{% endif %}">
+                        <div class="ai-settings mt-3 {% if current_mode != 'gemini' and current_mode != 'agentrouter' %}d-none{% endif %}">
                             <label class="form-label form-label-sm d-flex align-items-center"><i class="bi bi-stopwatch me-1"></i> Delay Baca (detik)</label>
                             <input type="number" class="form-control form-control-sm read-delay mb-2" value="{{ task.read_delay }}">
                         </div>
-                        <div class="openrouter-settings mt-3 {% if current_mode != 'openrouter' %}d-none{% endif %}">
-                            <label class="form-label form-label-sm d-flex align-items-center"><i class="bi bi-robot me-1"></i> OpenRouter Model</label>
-                            <select class="form-select form-select-sm openrouter-model">
-                                <option value="openai/gpt-3.5-turbo" {% if task.openrouter_model == 'openai/gpt-3.5-turbo' %}selected{% endif %}>GPT-3.5 Turbo (Free)</option>
-                                <option value="openai/gpt-4" {% if task.openrouter_model == 'openai/gpt-4' %}selected{% endif %}>GPT-4</option>
-                                <option value="anthropic/claude-3-haiku" {% if task.openrouter_model == 'anthropic/claude-3-haiku' %}selected{% endif %}>Claude 3 Haiku</option>
-                                <option value="anthropic/claude-3.5-sonnet" {% if task.openrouter_model == 'anthropic/claude-3.5-sonnet' %}selected{% endif %}>Claude 3.5 Sonnet</option>
-                                <option value="google/gemini-pro-1.5" {% if task.openrouter_model == 'google/gemini-pro-1.5' %}selected{% endif %}>Gemini Pro 1.5</option>
-                                <option value="meta-llama/llama-3.1-70b-instruct" {% if task.openrouter_model == 'meta-llama/llama-3.1-70b-instruct' %}selected{% endif %}>LLaMA 3.1 70B</option>
-                                <option value="mistralai/mixtral-8x7b-instruct" {% if task.openrouter_model == 'mistralai/mixtral-8x7b-instruct' %}selected{% endif %}>Mixtral 8x7B</option>
+                        <div class="agentrouter-settings mt-3 {% if current_mode != 'agentrouter' %}d-none{% endif %}">
+                            <label class="form-label form-label-sm d-flex align-items-center"><i class="bi bi-robot me-1"></i> AgentRouter Model</label>
+                            <select class="form-select form-select-sm agentrouter-model">
+                                <option value="gpt-5" {% if task.agentrouter_model == 'gpt-5' %}selected{% endif %}>GPT-5 (Default)</option>
+                                <option value="gpt-4" {% if task.agentrouter_model == 'gpt-4' %}selected{% endif %}>GPT-4</option>
+                                <option value="gpt-4-turbo" {% if task.agentrouter_model == 'gpt-4-turbo' %}selected{% endif %}>GPT-4 Turbo</option>
+                                <option value="gpt-3.5-turbo" {% if task.agentrouter_model == 'gpt-3.5-turbo' %}selected{% endif %}>GPT-3.5 Turbo</option>
                             </select>
                         </div>
                         {% if (task.mode is defined and task.mode == 'pesan') or (task.mode is not defined and not task.use_google_ai) %}
@@ -411,30 +408,30 @@
         </div>
     </div>
 
-    <!-- Add OpenRouter API Key Modal -->
-    <div class="modal fade" id="addOpenRouterKeyModal" tabindex="-1" aria-labelledby="addOpenRouterKeyModalLabel" aria-hidden="true">
+    <!-- Add AgentRouter API Key Modal -->
+    <div class="modal fade" id="addAgentRouterKeyModal" tabindex="-1" aria-labelledby="addAgentRouterKeyModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content bg-dark text-white">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title" id="addOpenRouterKeyModalLabel">
-                        <i class="bi bi-box-arrow-up-right me-2 text-warning"></i>Add OpenRouter API Key
+                    <h5 class="modal-title" id="addAgentRouterKeyModalLabel">
+                        <i class="bi bi-box-arrow-up-right me-2 text-warning"></i>Add AgentRouter API Key
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        <small>Get your API key from: <a href="https://openrouter.ai/keys" target="_blank" class="text-white">OpenRouter Keys</a></small>
+                        <small>Get your API key from: <a href="https://agentrouter.org" target="_blank" class="text-white">AgentRouter</a></small>
                     </div>
                     <div class="mb-3">
-                        <label for="newOpenRouterKeyInput" class="form-label">OpenRouter API Key</label>
-                        <textarea class="form-control font-monospace" id="newOpenRouterKeyInput" rows="2" placeholder="Paste your OpenRouter API key here..."></textarea>
-                        <small class="form-text text-muted">API key format: sk-or-...</small>
+                        <label for="newAgentRouterKeyInput" class="form-label">AgentRouter API Key</label>
+                        <textarea class="form-control font-monospace" id="newAgentRouterKeyInput" rows="2" placeholder="Paste your AgentRouter API key here..."></textarea>
+                        <small class="form-text text-muted">Enter your AGENT_ROUTER_TOKEN</small>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" id="saveOpenRouterKeyBtn">
+                    <button type="button" class="btn btn-success" id="saveAgentRouterKeyBtn">
                         <i class="bi bi-plus-lg me-1"></i>Add API Key
                     </button>
                 </div>

@@ -173,9 +173,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        if (e.target.closest('.toggle-openrouter-visibility')) {
-            const btn = e.target.closest('.toggle-openrouter-visibility');
-            const input = btn.closest('.input-group').querySelector('.openrouter-key-input');
+        if (e.target.closest('.toggle-agentrouter-visibility')) {
+            const btn = e.target.closest('.toggle-agentrouter-visibility');
+            const input = btn.closest('.input-group').querySelector('.agentrouter-key-input');
             const icon = btn.querySelector('i');
             if (input.type === 'password') {
                 input.type = 'text';
@@ -311,10 +311,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        if (e.target.closest('.copy-openrouter-btn')) {
+        if (e.target.closest('.copy-agentrouter-btn')) {
             e.preventDefault();
-            const btn = e.target.closest('.copy-openrouter-btn');
-            const input = btn.closest('.input-group').querySelector('.openrouter-key-input');
+            const btn = e.target.closest('.copy-agentrouter-btn');
+            const input = btn.closest('.input-group').querySelector('.agentrouter-key-input');
 
             // Fallback copy function
             const fallbackCopy = (text) => {
@@ -391,9 +391,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        if (e.target.closest('.delete-openrouter-btn')) {
-            if (confirm('Are you sure you want to delete this OpenRouter key?')) {
-                const keyItem = e.target.closest('.openrouter-key-item');
+        if (e.target.closest('.delete-agentrouter-btn')) {
+            if (confirm('Are you sure you want to delete this AgentRouter key?')) {
+                const keyItem = e.target.closest('.agentrouter-key-item');
                 keyItem.remove();
                 triggerSave(true);
             }
@@ -483,27 +483,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Add new OpenRouter API key modal
-    const saveOpenRouterKeyBtn = document.getElementById('saveOpenRouterKeyBtn');
-    const newOpenRouterKeyInput = document.getElementById('newOpenRouterKeyInput');
+    // Add new AgentRouter API key modal
+    const saveAgentRouterKeyBtn = document.getElementById('saveAgentRouterKeyBtn');
+    const newAgentRouterKeyInput = document.getElementById('newAgentRouterKeyInput');
 
-    if (saveOpenRouterKeyBtn) {
-        saveOpenRouterKeyBtn.addEventListener('click', async () => {
-            const apiKey = newOpenRouterKeyInput.value.trim();
+    if (saveAgentRouterKeyBtn) {
+        saveAgentRouterKeyBtn.addEventListener('click', async () => {
+            const apiKey = newAgentRouterKeyInput.value.trim();
             if (!apiKey) {
-                alert('Please enter an OpenRouter API key');
-                return;
-            }
-
-            // Basic API key validation
-            if (!apiKey.startsWith('sk-or-')) {
-                alert('Invalid API key format. OpenRouter API keys should start with "sk-or-"');
+                alert('Please enter an AgentRouter API key');
                 return;
             }
 
             // Add API key to config
             const config = collectConfigData();
-            config.openrouter_api_keys.push(apiKey);
+            config.agentrouter_api_keys.push(apiKey);
 
             try {
                 const response = await fetch('/save_config', {
@@ -514,12 +508,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    showSaveNotification('success', 'OpenRouter API key added successfully!');
+                    showSaveNotification('success', 'AgentRouter API key added successfully!');
                     setTimeout(() => location.reload(), 1000);
-                    bootstrap.Modal.getInstance(document.getElementById('addOpenRouterKeyModal')).hide();
+                    bootstrap.Modal.getInstance(document.getElementById('addAgentRouterKeyModal')).hide();
                 }
             } catch (error) {
-                showSaveNotification('error', 'Failed to add OpenRouter API key');
+                showSaveNotification('error', 'Failed to add AgentRouter API key');
             }
         });
     }
@@ -534,8 +528,8 @@ document.addEventListener('DOMContentLoaded', function() {
         newApiKeyInput.value = '';
     });
 
-    document.getElementById('addOpenRouterKeyModal')?.addEventListener('hidden.bs.modal', () => {
-        newOpenRouterKeyInput.value = '';
+    document.getElementById('addAgentRouterKeyModal')?.addEventListener('hidden.bs.modal', () => {
+        newAgentRouterKeyInput.value = '';
     });
 
     // ============ TASK MANAGEMENT ============
@@ -566,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.classList.contains('mode-select')) {
             const card = e.target.closest('.task-card');
             const mode = e.target.value;
-            const isAiMode = mode === 'gemini' || mode === 'openrouter';
+            const isAiMode = mode === 'gemini' || mode === 'agentrouter';
 
             // Show/hide AI settings (read delay)
             const aiSettings = card.querySelector('.ai-settings');
@@ -574,10 +568,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 aiSettings.style.display = isAiMode ? 'block' : 'none';
             }
 
-            // Show/hide OpenRouter specific settings
-            const openrouterSettings = card.querySelector('.openrouter-settings');
-            if (openrouterSettings) {
-                openrouterSettings.style.display = mode === 'openrouter' ? 'block' : 'none';
+            // Show/hide AgentRouter specific settings
+            const agentrouterSettings = card.querySelector('.agentrouter-settings');
+            if (agentrouterSettings) {
+                agentrouterSettings.style.display = mode === 'agentrouter' ? 'block' : 'none';
             }
 
             // toggle pesan.txt badge section
@@ -707,19 +701,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Collect OpenRouter API keys
-        const openrouterKeys = [];
-        document.querySelectorAll('.openrouter-key-item').forEach(item => {
-            const keyInput = item.querySelector('.openrouter-key-input');
+        // Collect AgentRouter API keys
+        const agentrouterKeys = [];
+        document.querySelectorAll('.agentrouter-key-item').forEach(item => {
+            const keyInput = item.querySelector('.agentrouter-key-input');
             if (keyInput && keyInput.value.trim()) {
-                openrouterKeys.push(keyInput.value.trim());
+                agentrouterKeys.push(keyInput.value.trim());
             }
         });
 
         const config = {
             discord_tokens: tokens,
             google_api_keys: apiKeys,
-            openrouter_api_keys: openrouterKeys,
+            agentrouter_api_keys: agentrouterKeys,
             tasks: []
         };
 
@@ -733,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // new mode field; keep use_google_ai for backward compatibility on the server side
                 mode: mode,
                 use_google_ai: mode === 'gemini',
-                openrouter_model: card.querySelector('.openrouter-model')?.value || 'openai/gpt-3.5-turbo',
+                agentrouter_model: card.querySelector('.agentrouter-model')?.value || 'gpt-5',
                 read_delay: parseInt(card.querySelector('.read-delay')?.value) || 10,
                 delay_interval: parseInt(card.querySelector('.delay-interval').value) || 30,
                 prompt_language: card.querySelector('.prompt-language')?.value || 'id',
