@@ -185,7 +185,7 @@ def generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queu
 
             client = genai.Client(api_key=google_api_key)
             # Use latest stable model
-            model_id = "gemini-2.0-flash-exp"
+            model_id = "gemini-2.5-flash-lite"
             try:
                 sdk_response = client.models.generate_content(
                     model=model_id,
@@ -208,9 +208,8 @@ def generate_reply(prompt, prompt_language, use_google_ai, google_api_keys, queu
 
         # REST fallback with updated model candidates (only working models)
         model_candidates = [
-            "gemini-2.0-flash-exp",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
+            "gemini-2.5-flash-lite",  # Updated model
+            "gemini-2.0-flash-lite",  # Updated model
         ]
 
         headers = {
