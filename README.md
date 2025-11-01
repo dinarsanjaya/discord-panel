@@ -122,12 +122,12 @@ http://localhost:5005
 
 1. Buka Discord di browser (bukan aplikasi desktop)
 2. Login dengan akun bot Anda
-3. Tekan F12 untuk membuka Developer Console
-4. Buka tab "Console"
-5. Paste kode berikut untuk extract token:
+3. Simpan Script ini di bookmark
+4. Klik
+5. Copy langsung paste nanti di localhost
 
 ```javascript
-(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()
+(()=>{var t=document.body.appendChild(document.createElement`iframe`).contentWindow.localStorage.token.replace(/["]+/g, '');prompt('Get Selfbot Discord Token by github.com/vsec7', t)})();
 ```
 
 6. Copy token yang muncul
@@ -218,3 +218,4 @@ This project is for educational purposes only. Use at your own risk.
 ## Disclaimer
 
 Penggunaan bot untuk spam atau activity yang melanggar Discord Terms of Service adalah tanggung jawab pengguna. Developer tidak bertanggung jawab atas penyalahgunaan tool ini.
+
