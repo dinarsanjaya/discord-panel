@@ -89,6 +89,7 @@ http://localhost:5005
 
 6. Konfigurasi Task:
    - **Mode**: Pilih "Gemini" (AI) atau "pesan.txt" (custom message)
+   - **Refresh Web** setelah input id tugas dan akun discord (Terutama ketika pilih mode gemini)
    - **Delay Baca**: Waktu delay untuk membaca pesan (mode Gemini)
    - **Interval Kirim**: Jeda waktu antar pengiriman pesan
    - **Bahasa**: Pilih bahasa untuk response AI
@@ -217,6 +218,7 @@ This project is for educational purposes only. Use at your own risk.
 ## Disclaimer
 
 Penggunaan bot untuk spam atau activity yang melanggar Discord Terms of Service adalah tanggung jawab pengguna. Developer tidak bertanggung jawab atas penyalahgunaan tool ini.
+
 
 
 
