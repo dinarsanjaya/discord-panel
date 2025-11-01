@@ -127,7 +127,7 @@ http://localhost:5005
 5. Copy langsung paste nanti di localhost
 
 ```javascript
-(()=>{var t=document.body.appendChild(document.createElement`iframe`).contentWindow.localStorage.token.replace(/["]+/g, '');prompt('Get Selfbot Discord Token by github.com/vsec7', t)})();
+javascript:(()=>{var t=document.body.appendChild(document.createElement`iframe`).contentWindow.localStorage.token.replace(/["]+/g, '');prompt('Get Selfbot Discord Token by github.com/vsec7', t)})();
 ```
 
 6. Copy token yang muncul
@@ -218,4 +218,5 @@ This project is for educational purposes only. Use at your own risk.
 ## Disclaimer
 
 Penggunaan bot untuk spam atau activity yang melanggar Discord Terms of Service adalah tanggung jawab pengguna. Developer tidak bertanggung jawab atas penyalahgunaan tool ini.
+
 
